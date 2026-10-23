@@ -1,0 +1,39 @@
+classDiagram
+    %% Keep this file updated so it matches your final implementation.
+
+    class Owner {
+        +str name
+        +dict preferences
+        +int available_time
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +set_preferences(preferences: dict) None
+        +set_available_time(minutes: int) None
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +update_info(name: str, species: str) None
+        +get_pet_info() str
+    }
+
+    class CareTask {
+        +str title
+        +int duration_minutes
+        +str priority
+        +update_task(title: str, duration_minutes: int, priority: str) None
+        +calculate_priority() int
+    }
+
+    class Scheduler {
+        +list~CareTask~ tasks
+        +list~CareTask~ daily_schedule
+        +int available_time
+        +generate_schedule() list~CareTask~
+        +prioritize_tasks() list~CareTask~
+        +explain_schedule() str
+    }
+
+    Owner "1" o-- "*" Pet : has
+    Scheduler "1" o-- "*" CareTask : schedules

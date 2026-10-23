@@ -1,0 +1,49 @@
+classDiagram
+    %% Keep this file updated so it matches your final implementation.
+
+    class Owner {
+        +str name
+        +dict preferences
+        +int available_time
+        +list~Pet~ pets
+        +add_pet(pet: Pet) None
+        +set_preferences(preferences: dict) None
+        +set_available_time(minutes: int) None
+        +get_all_tasks() list
+    }
+
+    class Pet {
+        +str name
+        +str species
+        +list~Task~ tasks
+        +update_info(name: str, species: str) None
+        +add_task(task: Task) None
+        +remove_task(description: str) None
+        +get_pet_info() str
+    }
+
+    class Task {
+        +str description
+        +str time
+        +str frequency
+        +bool completed
+        +int duration_minutes
+        +str priority
+        +update_task(description, time, frequency, duration_minutes, priority) None
+        +mark_complete() None
+        +calculate_priority() int
+    }
+
+    class Scheduler {
+        +Owner owner
+        +time day_start
+        +list daily_schedule
+        +list skipped_tasks
+        +prioritize_tasks() list
+        +generate_schedule() list
+        +explain_schedule() str
+    }
+
+    Owner "1" o-- "*" Pet : has
+    Pet "1" o-- "*" Task : needs
+    Scheduler --> Owner : reads get_all_tasks()

@@ -39,11 +39,21 @@ I linked the classes so the design matches how the app will actually be used. Ea
 **a. How you used AI**
 
 - How did you use AI tools during this project (for example: design brainstorming, debugging, refactoring)?
+
+1. I used AI to brainstorm the class design and draft the UML diagram, then to turn the UML into class skeletons in pawpal_system.py. Later I used it to refactor the code, for example moving the skeletons out of the diagrams. I also had it help write the pytest tests and the main.py demo, and used it to debug errors when tests failed.
+
 - What kinds of prompts or questions were most helpful?
+
+1. "Given this UML, generate Python class skeletons with type hints."
+2. "Why does this test fail?" with the error pasted in.
+3. "Suggest edge cases to test for the scheduler."
 
 **b. Judgment and verification**
 
 - Describe one moment where you did not accept an AI suggestion as-is.
+
+1. When I asked the AI to turn my UML into class skeletons, it added extra methods and attributes my design didn't need, and it put scheduling logic inside the Pet class. I removed what I didn't need and moved the scheduling into the Scheduler class so each class kept one clear job. Then I updated the UML to match. 
+
 - How did you evaluate or verify what the AI suggested?
 
 ---

@@ -42,16 +42,34 @@ pip install -r requirements.txt
 6. Connect your logic to the Streamlit UI in `app.py`.
 7. Refine UML so it matches what you actually built.
 
+## 🛠️ Implementation Summary
+
+The core logic lives in `pawpal_system.py` as four classes, with `main.py` as a CLI demo:
+
+- **`Task`** — one care activity: description, preferred time (`"HH:MM"` or none), duration, priority (`low`/`medium`/`high`), frequency, and a completed flag. It validates its own fields and converts priority to a numeric score for sorting.
+- **`Pet`** — a pet's name and species, plus the list of tasks it needs. Tasks are added and removed through the pet.
+- **`Owner`** — holds the owner's pets and how many minutes they have free today. `get_all_tasks()` returns every `(pet, task)` pair across all pets, so nothing downstream has to loop over pets itself.
+- **`Scheduler`** — the "brain." Given an owner, `generate_schedule()`:
+  1. pulls all incomplete tasks via `owner.get_all_tasks()` and sorts them by priority (shorter tasks first on ties),
+  2. keeps taking tasks until the owner's available time runs out, recording the rest in `skipped_tasks` with a reason,
+  3. lays the chosen tasks out in order of preferred time, starting each at that time or right after the previous task finishes (tasks with no preferred time go last).
+
+  `explain_schedule()` returns a plain-text reason for every task that was scheduled or skipped.
+
+In short: `Owner` → has many `Pet`s → each has many `Task`s, and `Scheduler` reads from the `Owner` to build the day's plan. Task `frequency` and owner `preferences` are stored but not yet used by the scheduler.
+
 ## 🖥️ Sample Output
 
 Paste a sample of your app's CLI or Streamlit output here so a reader can see what a generated plan looks like:
 
 ```
-# e.g.:
-# Daily plan for Biscuit (Golden Retriever):
-#   08:00 — Morning walk (30 min) [priority: high]
-#   09:00 — Feeding (10 min) [priority: high]
-#   ...
+Today's Schedule for Jordan
+========================================
+08:00  Mochi  Morning walk (30 min, high)
+08:30  Luna   Breakfast (10 min, high)
+12:30  Luna   Clean litter box (15 min, medium)
+18:00  Mochi  Evening walk (30 min, medium)
+18:30  Luna   Brush fur (20 min, low)
 ```
 
 ## 🧪 Testing PawPal+

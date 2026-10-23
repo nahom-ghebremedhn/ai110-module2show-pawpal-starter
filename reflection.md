@@ -16,6 +16,8 @@
 - Did your design change during implementation?
 - If yes, describe at least one change and why you made it.
 
+I linked the classes so the design matches how the app will actually be used. Each Pet now holds its own care tasks, and Scheduler reads the time, preferences and pets straight from Owner, so there's only one copy of each value to keep in sync. I made priority a fixed set of levels (low, medium, high) and added checks that reject bad input like zero-minute tasks, so typos can't quietly mess up the order. The scheduler now also records which tasks it skipped and why, and gives each scheduled task a pet and a start time, so it can explain its choices and show a readable daily plan.
+
 ---
 
 ## 2. Scheduling Logic and Tradeoffs

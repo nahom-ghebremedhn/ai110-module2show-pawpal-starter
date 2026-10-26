@@ -56,7 +56,7 @@ The core logic lives in `pawpal_system.py` as four classes, with `main.py` as a 
 
   `explain_schedule()` returns a plain-text reason for every task that was scheduled or skipped.
 
-In short: `Owner` → has many `Pet`s → each has many `Task`s, and `Scheduler` reads from the `Owner` to build the day's plan. Task `frequency` and owner `preferences` are stored but not yet used by the scheduler.
+In short: `Owner` → has many `Pet`s → each has many `Task`s, and `Scheduler` reads from the `Owner` to build the day's plan. Task `frequency` drives recurring tasks (see Smarter Scheduling); owner `preferences` are stored but not yet used by the scheduler.
 
 ## 🖥️ Sample Output
 
@@ -90,14 +90,67 @@ Sample test output:
 
 ## 📐 Smarter Scheduling
 
-> Fill in once you've implemented scheduling logic.
+Four features build on the basic scheduler. All of them are in `pawpal_system.py`, demonstrated in `main.py` and covered by tests in `tests/test_pawpal.py`.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
+| Task sorting | `Scheduler.sort_by_time()` | By preferred `"HH:MM"` time; tasks with no time go last |
+| Filtering | `Scheduler.filter_tasks()` | By pet name, completion status or both |
+| Conflict handling | `Scheduler.detect_conflicts()` | Warns about overlapping times instead of crashing |
+| Recurring tasks | `Scheduler.mark_task_complete()`, `Task.next_occurrence()` | Daily tasks repeat the next day, weekly tasks 7 days later |
+
+### Sorting: `Scheduler.sort_by_time(tasks)`
+
+Returns `(pet, task)` pairs in order of preferred time, across all pets. It uses `sorted()` with a lambda key, `(task.time is None, task.time or "")`:
+
+- The first part puts tasks that have a time before tasks that don't.
+- The second part orders the timed tasks by their `"HH:MM"` string. Zero-padded times sort correctly as plain text (`"07:30"` < `"12:30"`).
+
+It returns a new list and leaves the input unchanged. `generate_schedule()` uses it to lay out the day.
+
+### Filtering: `Scheduler.filter_tasks(pet_name=None, completed=None)`
+
+Returns the `(pet, task)` pairs that match the filters you pass. A filter left as `None` is ignored.
+
+```python
+scheduler.filter_tasks(pet_name="Luna")                   # all of Luna's tasks
+scheduler.filter_tasks(completed=False)                   # unfinished tasks for every pet
+scheduler.filter_tasks(pet_name="Luna", completed=False)  # Luna's unfinished tasks
+```
+
+The result can be passed to `sort_by_time()`. Pet names must match exactly, including case.
+
+### Conflict detection: `Scheduler.detect_conflicts()`
+
+A lightweight check that returns a list of warning messages instead of raising an error, so one double-booked task never stops the app:
+
+1. Takes unfinished tasks due today that have a preferred time.
+2. Converts each time to minutes since midnight. A time that isn't valid `"HH:MM"` (like `"7:30"` or `"25:00"`) gets an "Invalid time" warning and is skipped.
+3. Sorts by start time. Two tasks conflict when the later one starts before the earlier one ends (start + duration). Because the list is sorted, the check stops early for each task, so it stays fast.
+
+Each warning says whether the overlap is for the same pet or different pets:
+
+```
+Conflict (different pets): Mochi's Medication at 08:00 overlaps Luna's Breakfast at 08:00
+```
+
+Back-to-back tasks (07:30 for 30 minutes, then 08:00) are not conflicts. The check uses the times the owner asked for; `generate_schedule()` still builds a plan by moving the later task back.
+
+### Recurring tasks: `Scheduler.mark_task_complete(pet, task)` and `Task.next_occurrence()`
+
+Each task has a `due_date` (today by default). Completing a task through `mark_task_complete()` marks it done and adds a new copy to the pet for its next occurrence:
+
+| Frequency | Next due date |
+|-----------|---------------|
+| `daily` | due date + `timedelta(days=1)` |
+| `weekly` | due date + `timedelta(days=7)` |
+| `once` | no new copy |
+
+`timedelta` handles month ends and leap years correctly. If the task was overdue, the next date counts from today, so finishing a late task never creates a copy that's already due.
+
+`generate_schedule()` only includes tasks due today or earlier, so tomorrow's copy of a daily task doesn't appear in today's plan, and weekly tasks don't show up every day.
+
+Use `mark_task_complete()` rather than `task.mark_complete()`; only the scheduler method creates the next occurrence.
 
 ## 📸 Demo Walkthrough
 

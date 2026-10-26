@@ -32,6 +32,9 @@ I linked the classes so the design matches how the app will actually be used. Ea
 - Describe one tradeoff your scheduler makes.
 - Why is that tradeoff reasonable for this scenario?
 
+The scheduler uses a greedy approach, choosing the highest-priority tasks first, if two tasks have the same priority, it chooses the shorter one first. It adds tasks if they fit within the owner's available time. Sometimes, this leaves unused time because it doesn't try every possible combination.
+This approach works well because important pet care, like feeding, medication and walks, should come first. It's simple to understand and effective for a small number of daily tasks.
+
 ---
 
 ## 3. AI Collaboration
@@ -85,3 +88,5 @@ I linked the classes so the design matches how the app will actually be used. Ea
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+## Smarter Scheduling 

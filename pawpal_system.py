@@ -259,8 +259,11 @@ class Scheduler:
             task: The task to mark complete.
 
         Returns:
-            The newly created next occurrence, or None for a one-off task.
+            The newly created next occurrence, or None for a one-off task or a
+            task that was already completed.
         """
+        if task.completed:
+            return None
         task.mark_complete()
         next_task = task.next_occurrence()
         if next_task is not None:
@@ -276,6 +279,14 @@ class Scheduler:
         chosen: list[tuple[Pet, Task]] = []
         remaining = self.owner.available_time
         for pet, task in self.prioritize_tasks():
+            if task.time is not None:
+                try:
+                    time.fromisoformat(task.time)
+                except ValueError:
+                    self.skipped_tasks.append(
+                        (pet, task, f"invalid time '{task.time}' (expected HH:MM)")
+                    )
+                    continue
             if task.duration_minutes <= remaining:
                 chosen.append((pet, task))
                 remaining -= task.duration_minutes
@@ -290,6 +301,9 @@ class Scheduler:
             if task.time is not None:
                 preferred = datetime.combine(today, time.fromisoformat(task.time))
                 cursor = max(cursor, preferred)
+            if cursor.date() > today:
+                self.skipped_tasks.append((pet, task, "no time left before midnight"))
+                continue
             self.daily_schedule.append((cursor.time(), pet, task))
             cursor += timedelta(minutes=task.duration_minutes)
 

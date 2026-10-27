@@ -89,4 +89,3 @@ This approach works well because important pet care, like feeding, medication an
 
 - What is one important thing you learned about designing systems or working with AI on this project?
 
-## Smarter Scheduling 

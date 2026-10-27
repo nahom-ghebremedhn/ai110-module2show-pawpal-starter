@@ -75,17 +75,29 @@ Today's Schedule for Jordan
 ## 🧪 Testing PawPal+
 
 ```bash
-# Run the full test suite:
-pytest
-
-# Run with coverage:
-pytest --cov
+python -m pytest
 ```
+
+The 31 tests in `tests/test_pawpal.py` cover:
+
+- **Sorting:** tasks come back in time order, with untimed tasks last.
+- **Recurrence:** completing a daily or weekly task adds a copy due 1 or 7 days later; one-off tasks don't repeat.
+- **Conflict detection:** overlapping or same-time tasks are flagged, for the same pet or across pets.
+- **Scheduling limits:** higher priority wins when time is short, and tasks that don't fit are skipped with a reason.
+- **Edge cases:** no pets or tasks, invalid times, completing a task twice, and plans that would run past midnight.
 
 Sample test output:
 
 ```
-# Paste your pytest output here
+========================================================== test session starts ==========================================================
+platform win32 -- Python 3.14.7, pytest-9.1.1, pluggy-1.7.0
+rootdir: C:\Users\bibia\ai110-module2show-pawpal-starter
+plugins: anyio-4.15.1
+collected 31 items                                                                                                                       
+
+tests\test_pawpal.py ...............................                                                                               [100%]
+
+========================================================== 31 passed in 0.09s ===========================================================
 ```
 
 ## 📐 Smarter Scheduling

@@ -59,6 +59,8 @@ This approach works well because important pet care, like feeding, medication an
 
 - How did you evaluate or verify what the AI suggested?
 
+I checked the changes that AI made and if I thoughts AI's suggestion was not the best way, I ask AI "What if I do this instead of this?" Also test it before proceeding to the next step.
+
 ---
 
 ## 4. Testing and Verification
@@ -68,10 +70,16 @@ This approach works well because important pet care, like feeding, medication an
 - What behaviors did you test?
 - Why were these tests important?
 
+I tested sorting by time, daily/weekly recurrence, conflict detection (same pet and across pets), priority within the time budget, and edge cases like invalid times and plans running past midnight.
+These matter because they're the scheduler's core decisions, so a bug there would silently give an owner a wrong or missing care plan.
+
 **b. Confidence**
 
-- How confident are you that your scheduler works correctly?
+- How confident are you that your scheduler works correctly? 
 - What edge cases would you test next if you had more time?
+
+Fairly confident (4/5): all 31 tests pass and I checked the CLI and Streamlit output by hand.
+Next I'd test the new `Conflict.suggested_time()` directly, three-way overlaps where one suggestion still clashes, tasks preferred before 08:00, and the Streamlit UI itself.
 
 ---
 
@@ -79,13 +87,17 @@ This approach works well because important pet care, like feeding, medication an
 
 **a. What went well**
 
-- What part of this project are you most satisfied with?
+The assistant read the actual code and ran things (pytest, main.py, a headless Streamlit test) so suggestions were checked against real output, not guessed. Inline file edits, and git-aware context made small incremental changes easy to review.
 
 **b. What you would improve**
 
 - If you had another iteration, what would you improve or redesign?
 
+I would make some classes and methods less dependent on one another because if I plan to extend the progeam later it would be much easier to add classes and methods than modify existing ones. 
+
 **c. Key takeaway**
 
 - What is one important thing you learned about designing systems or working with AI on this project?
+
+I leared that AI can be the perfect collaborator in a project because you can interact with it the way you want and learn a lot from its suggestion though you should not be dependent on it. 
 

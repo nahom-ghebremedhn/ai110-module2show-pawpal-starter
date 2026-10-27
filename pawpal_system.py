@@ -138,6 +138,29 @@ class Owner:
         return [(pet, task) for pet in self.pets for task in pet.tasks]
 
 
+@dataclass
+class Conflict:
+    """Two due tasks whose preferred time windows overlap."""
+
+    first_pet: Pet
+    first_task: Task  # the task that starts earlier
+    second_pet: Pet
+    second_task: Task
+    first_end: int  # minutes since midnight when first_task ends
+    overlap_minutes: int
+
+    @property
+    def same_pet(self) -> bool:
+        """True when both tasks belong to the same pet."""
+        return self.first_pet is self.second_pet
+
+    def suggested_time(self) -> str | None:
+        """Return the earliest "HH:MM" the second task could start without overlap."""
+        if self.first_end >= 24 * 60:
+            return None
+        return f"{self.first_end // 60:02d}:{self.first_end % 60:02d}"
+
+
 class Scheduler:
     """The "brain": retrieves, organizes, and manages tasks across all pets.
 
@@ -202,24 +225,21 @@ class Scheduler:
             and (completed is None or task.completed == completed)
         ]
 
-    def detect_conflicts(self) -> list[str]:
-        """Return a warning for each pair of due tasks whose preferred times overlap.
+    def find_conflicts(self) -> tuple[list[Conflict], list[tuple[Pet, Task]]]:
+        """Return overlapping task pairs and tasks whose time is not valid "HH:MM".
 
-        A lightweight check that warns instead of raising, so the schedule can
-        still be built:
-          1. Take incomplete tasks due today that have a preferred time.
-          2. Convert each time to minutes since midnight. A time that is not
-             valid "HH:MM" gets an "Invalid time" warning and is skipped.
-          3. Sort by start. Two tasks overlap when the later one starts before
-             the earlier one ends (start + duration_minutes). Because the list
-             is sorted, the inner loop stops at the first task that starts after
-             the current one ends.
+        Only incomplete tasks due today that have a preferred time are checked.
+        Times are converted to minutes since midnight and sorted by start. Two
+        tasks overlap when the later one starts before the earlier one ends;
+        because the list is sorted, the inner loop stops at the first task that
+        starts after the current one ends.
 
         Returns:
-            Warning strings, each noting whether the overlap is for the same pet
-            or different pets. An empty list means no conflicts.
+            A (conflicts, invalid) pair: Conflict objects in start-time order,
+            and the (pet, task) pairs whose time could not be parsed.
         """
-        warnings = []
+        conflicts = []
+        invalid = []
         timed = []
         for pet, task in self.prioritize_tasks():
             if task.time is None:
@@ -227,25 +247,51 @@ class Scheduler:
             try:
                 start_time = time.fromisoformat(task.time)
             except ValueError:
-                warnings.append(
-                    f"Invalid time: {pet.name}'s {task.description} has time "
-                    f"'{task.time}' (expected HH:MM); skipped"
-                )
+                invalid.append((pet, task))
                 continue
             start = start_time.hour * 60 + start_time.minute
             timed.append((start, start + task.duration_minutes, pet, task))
         timed.sort(key=lambda entry: entry[0])
 
         for i, (start, end, pet, task) in enumerate(timed):
-            for other_start, _, other_pet, other_task in timed[i + 1:]:
+            for other_start, other_end, other_pet, other_task in timed[i + 1:]:
                 if other_start >= end:
                     break
-                scope = "same pet" if other_pet is pet else "different pets"
-                warnings.append(
-                    f"Conflict ({scope}): {pet.name}'s {task.description} at {task.time} "
-                    f"overlaps {other_pet.name}'s {other_task.description} "
-                    f"at {other_task.time}"
+                conflicts.append(
+                    Conflict(
+                        first_pet=pet,
+                        first_task=task,
+                        second_pet=other_pet,
+                        second_task=other_task,
+                        first_end=end,
+                        overlap_minutes=min(end, other_end) - other_start,
+                    )
                 )
+        return conflicts, invalid
+
+    def detect_conflicts(self) -> list[str]:
+        """Return a warning string for each conflict or invalid time.
+
+        A lightweight check that warns instead of raising, so the schedule can
+        still be built. See find_conflicts() for the structured version.
+
+        Returns:
+            Warning strings, each noting whether the overlap is for the same pet
+            or different pets. An empty list means no conflicts.
+        """
+        conflicts, invalid = self.find_conflicts()
+        warnings = [
+            f"Invalid time: {pet.name}'s {task.description} has time "
+            f"'{task.time}' (expected HH:MM); skipped"
+            for pet, task in invalid
+        ]
+        for c in conflicts:
+            scope = "same pet" if c.same_pet else "different pets"
+            warnings.append(
+                f"Conflict ({scope}): {c.first_pet.name}'s {c.first_task.description} "
+                f"at {c.first_task.time} overlaps {c.second_pet.name}'s "
+                f"{c.second_task.description} at {c.second_task.time}"
+            )
         return warnings
 
     def mark_task_complete(self, pet: Pet, task: Task) -> Task | None:

@@ -9,7 +9,7 @@ classDiagram
         +add_pet(pet: Pet) None
         +set_preferences(preferences: dict) None
         +set_available_time(minutes: int) None
-        +get_all_tasks() list
+        +get_all_tasks() list~(Pet, Task)~
     }
 
     class Pet {
@@ -24,26 +24,50 @@ classDiagram
 
     class Task {
         +str description
-        +str time
+        +str|None time
         +str frequency
         +bool completed
         +int duration_minutes
         +str priority
+        +date due_date
         +update_task(description, time, frequency, duration_minutes, priority) None
         +mark_complete() None
+        +next_occurrence() Task|None
         +calculate_priority() int
     }
 
     class Scheduler {
         +Owner owner
         +time day_start
-        +list daily_schedule
-        +list skipped_tasks
-        +prioritize_tasks() list
-        +generate_schedule() list
+        +list~(time, Pet, Task)~ daily_schedule
+        +list~(Pet, Task, str)~ skipped_tasks
+        +prioritize_tasks() list~(Pet, Task)~
+        +sort_by_time(tasks: list) list~(Pet, Task)~
+        +filter_tasks(pet_name: str|None, completed: bool|None) list~(Pet, Task)~
+        +find_conflicts() tuple~conflicts, invalid_times~
+        +detect_conflicts() list~str~
+        +mark_task_complete(pet: Pet, task: Task) Task|None
+        +generate_schedule() list~(time, Pet, Task)~
         +explain_schedule() str
+    }
+
+    class Conflict {
+        +Pet first_pet
+        +Task first_task
+        +Pet second_pet
+        +Task second_task
+        +int first_end
+        +int overlap_minutes
+        +same_pet() bool
+        +suggested_time() str|None
     }
 
     Owner "1" o-- "*" Pet : has
     Pet "1" o-- "*" Task : needs
     Scheduler --> Owner : reads get_all_tasks()
+    Scheduler ..> Task : sorts, filters, completes
+    Scheduler ..> Pet : adds next occurrence
+    Scheduler ..> Conflict : creates
+    Conflict --> "2" Pet : involves
+    Conflict --> "2" Task : involves
+    Task ..> Task : next_occurrence()
